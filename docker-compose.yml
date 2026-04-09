@@ -1,0 +1,44 @@
+services:
+  backend:
+    build:
+      context: ./Backend_API
+      dockerfile: Dockerfile
+    container_name: tmaps-backend
+    ports:
+      - "8817:8817"
+    volumes:
+      - ./Backend_API:/app
+      - /app/__pycache__
+    environment:
+      - DEBUG=True
+      - DJANGO_SETTINGS_MODULE=core_main_tmaps.settings
+      - PYTHONUNBUFFERED=1
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8817/api/empleados/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./Frontend_Web
+      dockerfile: Dockerfile
+    container_name: tmaps-frontend
+    ports:
+      - "3367:3367"
+    volumes:
+      - ./Frontend_Web/src:/app/src
+      - ./Frontend_Web/public:/app/public
+      - /app/node_modules
+    environment:
+      - PORT=3367
+      - HOST=0.0.0.0
+      - WDS_SOCKET_HOST=0.0.0.0
+      - DANGEROUSLY_DISABLE_HOST_CHECK=true
+      - REACT_APP_API_URL=http://backend:8817/api
+    depends_on:
+      backend:
+        condition: service_healthy
+    stdin_open: true
+    tty: true
